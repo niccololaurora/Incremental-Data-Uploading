@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from qibo import set_backend, gates, Circuit
 from qibo.optimizers import optimize
-from qibo.symbols import Z
 from qibo import hamiltonians
 from help_functions import (
     initialize_data,
@@ -11,6 +10,8 @@ from help_functions import (
     variational_block,
     encoding_block,
     label_converter,
+    loss_function,
+    single_image,
 )
 
 set_backend("tensorflow")
@@ -29,14 +30,15 @@ def main():
     batch_size = 2
     resize = 10
     filt = "no"
-    loss = loss_function
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     vparams = tf.random.normal(shape=(400,))
 
     # Data loading and filtering
     x_train, y_train, x_test, y_test = initialize_data(train_size, resize, filt)
+    with open(nome_file, "a") as file:
+        print(f"Tipo: {type(y_train)}")
+        print("=" * 60, file=file)
 
-    print(f"{x_train.shape}")
     y_train = np.array([label_converter(label) for label in y_train])
     y_test = np.array([label_converter(label) for label in y_test])
 
@@ -53,7 +55,7 @@ def main():
         print(f"Epoch {i+1}")
         with tf.GradientTape() as tape:
             tape.watch(vparams)
-            l = loss(vparams, x_train, y_train, layers, nqubits)
+            l = loss_function(vparams, x_train, y_train, layers, nqubits)
         grads = tape.gradient(l, vparams)
 
         with open(nome_file, "a") as file:

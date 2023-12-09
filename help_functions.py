@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from qibo import set_backend, gates, Circuit
+from qibo.symbols import Z
+from qibo import hamiltonians
 
 set_backend("tensorflow")
 
@@ -86,34 +88,43 @@ def single_image(vparams, image, label, layers, nqubits):
     row_image = tf.split(image, num_or_size_splits=10, axis=0)
     row_vparams = tf.split(vparams, num_or_size_splits=20, axis=0)
 
+    # Creation: encoding block, variational block, measurement block
+    ce = encoding_block(nqubits)
+    cv = variational_block(nqubits)
+    cm = measure_block(nqubits)
+
     # building the circuit
-    tensor_size = 2**nqubits
-    tensor_values = [1] + [0] * (tensor_size - 1)
-    initial_state = tf.constant(tensor_values, dtype=tf.float32)
+    # tensor_size = 2**nqubits
+    # tensor_values = [1] + [0] * (tensor_size - 1)
+    # initial_state = tf.constant(tensor_values, dtype=tf.float32)
+    initial_state = 0
     for i in range(layers):
         print(f"Layer {i}")
         row_image_flat = tf.reshape(row_image[i], [-1])
         row_vparams_flat = tf.reshape(row_vparams[i], [-1])
 
         # encoding block
-        ce = encoding_block(nqubits)
-        ce.set_parameters(row_image_flat)
-        result_ce = ce(initial_state)
+        if i == 0:
+            ce.set_parameters(row_image_flat)
+            result_ce = ce()
+
+        else:
+            ce.set_parameters(row_image_flat)
+            result_ce = ce(initial_state)
 
         # variational block
-        cv = variational_block(nqubits)
         cv.set_parameters(row_vparams_flat)
         result_cv = cv(result_ce.state())
         state_cv = result_cv.state()
+        initial_state = state_cv
 
     # stato finale dopo i layer di encoding e variational
-    final_state = state_cv
+    final_state = initial_state
 
     # measuring block
     print("Measurement")
     shots = 2
-    c = measure_block(nqubits)
-    result = c(final_state, nshots=shots)
+    result = cm(final_state, nshots=shots)
 
     # expectation values
     print("Calculating expectation values")
