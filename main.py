@@ -16,67 +16,6 @@ from help_functions import (
 set_backend("tensorflow")
 
 
-def loss_function(vparams, x_train, y_train, layers, nqubits):
-    cf = 0
-    counter = 0
-    for x, y in zip(x_train, y_train):
-        cf += single_image(vparams, x, y, layers, nqubits)
-        print(f"Immagine {counter+1} processata")
-        counter += 1
-    cf /= len(x_train)
-    return cf
-
-
-def single_image(vparams, image, label, layers, nqubits):
-    # resizing and using rows of params and image
-    row_image = tf.split(image, num_or_size_splits=10, axis=0)
-    row_vparams = tf.split(vparams, num_or_size_splits=20, axis=0)
-
-    # building the circuit
-    tensor_size = 2**nqubits
-    tensor_values = [1] + [0] * (tensor_size - 1)
-    initial_state = tf.constant(tensor_values, dtype=tf.float32)
-    for i in range(layers):
-        print(f"Layer {i}")
-        row_image_flat = tf.reshape(row_image[i], [-1])
-        row_vparams_flat = tf.reshape(row_vparams[i], [-1])
-
-        # encoding block
-        ce = encoding_block(nqubits)
-        ce.set_parameters(row_image_flat)
-        result_ce = ce(initial_state)
-
-        # variational block
-        cv = variational_block(nqubits)
-        cv.set_parameters(row_vparams_flat)
-        result_cv = cv(result_ce.state())
-        state_cv = result_cv.state()
-
-    # stato finale dopo i layer di encoding e variational
-    final_state = state_cv
-
-    # measuring block
-    print("Measurement")
-    shots = 2
-    c = measure_block(nqubits)
-    result = c(final_state, nshots=shots)
-
-    # expectation values
-    print("Calculating expectation values")
-    expectation_values = []
-    for k in range(nqubits):
-        symbolic_ham = Z(k)
-        ham = hamiltonians.SymbolicHamiltonian(symbolic_ham)
-        expectation_value = ham.expectation_from_samples(result.frequencies())
-        expectation_values.append(expectation_value)
-
-    # softmax
-    soft_output = tf.nn.softmax(expectation_values)
-    print(f"Softmax: {soft_output}")
-
-    return tf.keras.losses.CategoricalCrossentropy()(label, soft_output)
-
-
 def main():
     # ==================================
     # Inizializzazione
@@ -86,7 +25,7 @@ def main():
     nqubits = 10
     layers = 10
     nclasses = 2
-    train_size = 2
+    train_size = 10
     batch_size = 2
     resize = 10
     filt = "no"
