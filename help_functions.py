@@ -142,9 +142,3 @@ def loss_function(vparams, x_train, y_train, layers, nqubits):
         counter += 1
     cf /= len(x_train)
     return cf
-
-
-def my_callback():
-    print("=" * 60)
-    print(f"Parametri\n {vparams[0:10]}")
-    print("=" * 60)
