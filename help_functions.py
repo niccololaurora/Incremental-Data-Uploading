@@ -94,23 +94,18 @@ def single_image(vparams, image, label, layers, nqubits):
     cm = measure_block(nqubits)
 
     # building the circuit
-    # tensor_size = 2**nqubits
-    # tensor_values = [1] + [0] * (tensor_size - 1)
-    # initial_state = tf.constant(tensor_values, dtype=tf.float32)
-    initial_state = 0
+    tensor_size = 2**nqubits
+    tensor_values = [1] + [0] * (tensor_size - 1)
+    initial_state = tf.constant(tensor_values, dtype=tf.float32)
+
+    # initial_state = 0
     for i in range(layers):
-        print(f"Layer {i}")
         row_image_flat = tf.reshape(row_image[i], [-1])
         row_vparams_flat = tf.reshape(row_vparams[i], [-1])
 
         # encoding block
-        if i == 0:
-            ce.set_parameters(row_image_flat)
-            result_ce = ce()
-
-        else:
-            ce.set_parameters(row_image_flat)
-            result_ce = ce(initial_state)
+        ce.set_parameters(row_image_flat)
+        result_ce = ce(initial_state)
 
         # variational block
         cv.set_parameters(row_vparams_flat)
@@ -122,12 +117,10 @@ def single_image(vparams, image, label, layers, nqubits):
     final_state = initial_state
 
     # measuring block
-    print("Measurement")
     shots = 2
     result = cm(final_state, nshots=shots)
 
     # expectation values
-    print("Calculating expectation values")
     expectation_values = []
     for k in range(nqubits):
         symbolic_ham = Z(k)
@@ -137,7 +130,6 @@ def single_image(vparams, image, label, layers, nqubits):
 
     # softmax
     soft_output = tf.nn.softmax(expectation_values)
-    print(f"Softmax: {soft_output}")
 
     return tf.keras.losses.CategoricalCrossentropy()(label, soft_output)
 
@@ -147,7 +139,12 @@ def loss_function(vparams, x_train, y_train, layers, nqubits):
     counter = 0
     for x, y in zip(x_train, y_train):
         cf += single_image(vparams, x, y, layers, nqubits)
-        print(f"Immagine {counter+1} processata")
         counter += 1
     cf /= len(x_train)
     return cf
+
+
+def my_callback():
+    print("=" * 60)
+    print(f"Parametri\n {vparams[0:10]}")
+    print("=" * 60)

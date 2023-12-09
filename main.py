@@ -2,8 +2,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from qibo import set_backend, gates, Circuit
-from qibo.optimizers import optimize
-from qibo import hamiltonians
+from qibo.optimizers import optimize, sgd, cmaes
 from help_functions import (
     initialize_data,
     measure_block,
@@ -12,6 +11,7 @@ from help_functions import (
     label_converter,
     loss_function,
     single_image,
+    my_callback,
 )
 
 set_backend("tensorflow")
@@ -26,30 +26,44 @@ def main():
     nqubits = 10
     layers = 10
     nclasses = 2
-    train_size = 10
+    train_size = 2
     batch_size = 2
     resize = 10
     filt = "no"
+    method = "sgd"
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    vparams = tf.random.normal(shape=(400,))
+    vparams = tf.Variable(tf.random.normal(shape=(400,)), trainable=True)
 
     # Data loading and filtering
     x_train, y_train, x_test, y_test = initialize_data(train_size, resize, filt)
-    with open(nome_file, "a") as file:
-        print(f"Tipo: {type(y_train)}")
-        print("=" * 60, file=file)
-
     y_train = np.array([label_converter(label) for label in y_train])
     y_test = np.array([label_converter(label) for label in y_test])
 
-    # ==================================
-    # STAMPA INFO SU FILE
-    # ==================================
-    with open(nome_file, "a") as file:
-        print(f"Parametri iniziali circuito", file=file)
-        print(f"{vparams}", file=file)
-        print("=" * 60, file=file)
+    if method == "sgd":
+        # perform optimization
+        options = {
+            "optimizer": "Adam",
+            "learning_rate": 0.001,
+            "nepochs": 4,
+            "nmessage": 1,
+        }
+        best, params, extra = optimize(
+            loss_function,
+            vparams,
+            args=(x_train, y_train, layers, nqubits),
+            method="sgd",
+            options=options,
+        )
 
+    else:
+        best, params, extra = optimize(
+            loss_function,
+            vparams,
+            args=(x_train, y_train, layers, nqubits),
+            method="cma",
+        )
+
+    """
     # perform optimization
     for i in range(nepochs):
         print(f"Epoch {i+1}")
@@ -65,6 +79,7 @@ def main():
 
         optimizer.apply_gradients(zip([grads], [vparams]))
 
+    """
     print("Fine del training")
     with open(nome_file, "a") as file:
         print("/" * 60, file=file)
@@ -73,7 +88,7 @@ def main():
         print("/" * 60, file=file)
         print("/" * 60, file=file)
         print(f"Parametri finali circuito", file=file)
-        print(f"{params}", file=file)
+        print(f"{vparams}", file=file)
         print(f"Loss {best}", file=file)
         print("=" * 60, file=file)
 
