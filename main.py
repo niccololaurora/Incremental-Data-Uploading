@@ -8,12 +8,12 @@ def main():
     # Inizializzazione
     # ==================================
     nome_file = "mnist_reuploading.txt"
-    train_size = 5
-    epochs = 2
-    batch_size = 2
     resize = 10
     filt = "no"
-    method = "sgd"
+    train_size = 0
+    epochs = 0
+    learning_rate = 0
+    method = 0
 
     my_class = MyClass(
         train_size=train_size,

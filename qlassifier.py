@@ -22,8 +22,6 @@ class MyClass:
         self.resize = resize
         self.filt = filt
         self.method = method
-        self.method = "sgd"
-        self.optimizer = "Adam"
         self.learning_rate = 0.001
         self.vparams = np.random.normal(loc=0, scale=1, size=(20, 20))
         self.x_train = 0
@@ -128,10 +126,14 @@ class MyClass:
         return rows
 
     def training_loop(self):
-        if self.method == "sgd":
+        if (
+            (self.method == "Adam")
+            or (self.method == "Adagrad")
+            or (self.method == "Adadelta")
+        ):
             # perform optimization
             options = {
-                "optimizer": self.optimizer,
+                "optimizer": self.method,
                 "learning_rate": self.learning_rate,
                 "nepochs": self.epochs,
                 "nmessage": 1,
