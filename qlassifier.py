@@ -5,8 +5,6 @@ from qibo import set_backend, gates, Circuit, hamiltonians
 from qibo.symbols import Z
 from qibo.optimizers import optimize, sgd, cmaes
 from help_functions import (
-    single_image,
-    initialize_data,
     label_converter,
 )
 
@@ -14,7 +12,7 @@ set_backend("tensorflow")
 
 
 class MyClass:
-    def __init__(train_size, resize, filt, epochs, batch_size, method):
+    def __init__(self, train_size, resize, filt, epochs, batch_size, method):
         self.nqubits = 10
         self.epochs = 3
         self.layers = 10
@@ -28,6 +26,48 @@ class MyClass:
         self.optimizer = "Adam"
         self.learning_rate = 0.001
         self.vparams = tf.Variable(tf.random.normal(shape=(400,)), trainable=True)
+        self.x_train = 0
+        self.y_train = 0
+        self.x_test = 0
+        self.y_test = 0
+
+    def initialize_data(self):
+        (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+        if self.filt == "yes":
+            mask_train = (y_train == 0) | (y_train == 1)
+            mask_test = (y_test == 0) | (y_test == 1)
+            x_train = x_train[mask_train]
+            y_train = y_train[mask_train]
+            x_test = x_test[mask_test]
+            y_test = y_test[mask_test]
+
+        if self.train_size != 0:
+            x_train = x_train[0 : self.train_size]
+            y_train = y_train[0 : self.train_size]
+            x_test = x_test[self.train_size + 1 : (self.train_size + 1) * 2]
+            y_test = y_test[self.train_size + 1 : (self.train_size + 1) * 2]
+
+        # Resize images
+        width, length = 10, 10
+
+        x_train = tf.expand_dims(x_train, axis=-1)
+        x_test = tf.expand_dims(x_test, axis=-1)
+
+        x_train = tf.image.resize(x_train, [width, length])
+        x_test = tf.image.resize(x_test, [width, length])
+
+        # Normalize pixel values to be between 0 and pi
+        x_train = x_train / 255.0 * np.pi
+        x_test = x_test / 255.0 * np.pi
+
+        y_train = np.array([label_converter(label) for label in y_train])
+        y_test = np.array([label_converter(label) for label in y_test])
+
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_test = x_test
+        self.y_test = y_test
 
     def measure_block(self):
         c = Circuit(self.nqubits)
@@ -84,7 +124,7 @@ class MyClass:
     def loss_function(self):
         predictions = []
         for x in self.x_train:
-            output = single_image(x)
+            output = self.single_image(x)
             predictions.append(output)
 
         loss_value = tf.keras.losses.CategoricalCrossentropy()(

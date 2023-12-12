@@ -38,7 +38,7 @@ print("expectation_value")
 print(expectation_value)
 
 
-print("="*60)
+print("=" * 60)
 print("Circuito 2")
 
 c = Circuit(1)
@@ -56,7 +56,7 @@ print("expectation_value")
 print(expectation_value)
 
 
-print("="*60)
+print("=" * 60)
 print("Circuito 3")
 
 c = Circuit(2)
@@ -78,3 +78,7 @@ for i in range(2):
     print("expectation_value")
     print(expectation_value)
 
+
+# Carica il dataset MNIST
+epochs = np.arange(0, 10, 1)
+print(epochs)

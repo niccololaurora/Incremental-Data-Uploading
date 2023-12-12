@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from qlassifier import MyClass
 
 
 def main():
@@ -14,8 +15,7 @@ def main():
     filt = "no"
     method = "sgd"
 
-    my_class = MyClass()
-    my_class.initialize_data(
+    my_class = MyClass(
         train_size=train_size,
         resize=resize,
         filt=filt,
@@ -23,6 +23,7 @@ def main():
         batch_size=batch_size,
         method=method,
     )
+    my_class.initialize_data()
 
     best, params, extra = my_class.training_loop()
 
