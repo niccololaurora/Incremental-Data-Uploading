@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from qibo import set_backend, gates, Circuit, hamiltonians
-from qibo.symbols import Z
+from qibo.symbols import Z, I
 from qibo.optimizers import optimize, sgd, cmaes
 from help_functions import (
     label_converter,
@@ -25,11 +25,34 @@ class MyClass:
         self.method = "sgd"
         self.optimizer = "Adam"
         self.learning_rate = 0.001
-        self.vparams = tf.Variable(tf.random.normal(shape=(400,)), trainable=True)
+        self.vparams = np.random.normal(loc=0, scale=1, size=(20, 20))
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
         self.y_test = 0
+        self.index = 0
+
+    def create_hamiltonian(self, index):
+        ham = (
+            Z(index)
+            * I(0)
+            * I(1)
+            * I(2)
+            * I(3)
+            * I(4)
+            * I(5)
+            * I(6)
+            * I(7)
+            * I(8)
+            * I(9)
+        )
+        return hamiltonians.SymbolicHamiltonian(ham)
+
+    def get_parameters(self):
+        return self.vparams
+
+    def set_parameters(self, vparams):
+        self.vparams = vparams
 
     def initialize_data(self):
         (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -71,7 +94,7 @@ class MyClass:
 
     def measure_block(self):
         c = Circuit(self.nqubits)
-        for i in range(nqubits):
+        for i in range(self.nqubits):
             c.add(gates.M(i))
         return c
 
@@ -83,7 +106,7 @@ class MyClass:
 
     def variational_block(self):
         c = Circuit(self.nqubits)
-        for i in range(nqubits):
+        for i in range(self.nqubits):
             c.add(gates.RY(i, theta=0))
             c.add(gates.RZ(i, theta=0))
         for i in range(self.nqubits - 1):
@@ -95,6 +118,14 @@ class MyClass:
             c.add(gates.CZ(i, nqubits-(i+1)))
         """
         return c
+
+    def rows_creator(self, image):
+        rows = []
+        for i in range(self.nqubits):
+            row = image[i, :10]
+            rows.append(row)
+
+        return rows
 
     def training_loop(self):
         if self.method == "sgd":
@@ -121,7 +152,11 @@ class MyClass:
 
         return best, params, extra
 
-    def loss_function(self):
+    def loss_function(self, vparams=None):
+        if vparams is None:
+            vparams = self.vparams
+        self.set_parameters(vparams)
+
         predictions = []
         for x in self.x_train:
             output = self.single_image(x)
@@ -135,13 +170,15 @@ class MyClass:
 
     def single_image(self, image):
         # resizing and using rows of params and image
-        row_image = tf.split(image, num_or_size_splits=10, axis=0)
-        row_vparams = tf.split(self.vparams, num_or_size_splits=20, axis=0)
+        # row_image = tf.split(image, num_or_size_splits=10, axis=0)
+        # row_vparams = tf.split(self.vparams, num_or_size_splits=20, axis=0)
+
+        rows = self.rows_creator(image)
 
         # Creation: encoding block, variational block, measurement block
-        ce = self.encoding_block(self.nqubits)
-        cv = self.variational_block(self.nqubits)
-        cm = self.measure_block(self.nqubits)
+        ce = self.encoding_block()
+        cv = self.variational_block()
+        cm = self.measure_block()
 
         # building the circuit
         tensor_size = 2**self.nqubits
@@ -150,15 +187,15 @@ class MyClass:
 
         # initial_state = 0
         for i in range(self.layers):
-            row_image_flat = tf.reshape(row_image[i], [-1])
-            row_vparams_flat = tf.reshape(row_vparams[i], [-1])
+            # row_image_flat = tf.reshape(rows[i], [-1])
+            # row_vparams_flat = tf.reshape(row_vparams[i], [-1])
 
             # encoding block
-            ce.set_parameters(row_image_flat)
+            ce.set_parameters(rows[i])
             result_ce = ce(initial_state)
 
             # variational block
-            cv.set_parameters(row_vparams_flat)
+            cv.set_parameters(self.vparams[i])
             result_cv = cv(result_ce.state())
             state_cv = result_cv.state()
             initial_state = state_cv
@@ -168,14 +205,14 @@ class MyClass:
 
         # measuring block
         shots = 2
-        result = cm(final_state, nshots=shots)
+        result = cm(final_state)
 
         # expectation values
         expectation_values = []
-        for k in range(nqubits):
-            symbolic_ham = Z(k)
-            ham = hamiltonians.SymbolicHamiltonian(symbolic_ham)
-            expectation_value = ham.expectation_from_samples(result.frequencies())
+
+        for k in range(self.nqubits):
+            hamiltonian = self.create_hamiltonian(k)
+            expectation_value = hamiltonian.expectation(result.state())
             expectation_values.append(expectation_value)
 
         # softmax
