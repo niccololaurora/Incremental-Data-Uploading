@@ -1,47 +1,55 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+def batch_data(x_train, y_train, number_of_batches, sizes_batches):
+    x_batch = []
+    y_batch = []
+
+    for k in range(number_of_batches):
+        if k == number_of_batches - 1:
+            x = x_train[
+                sizes_batches[k - 1] * k : sizes_batches[k - 1] * k + sizes_batches[k]
+            ]
+            y = y_train[
+                sizes_batches[k - 1] * k : sizes_batches[k - 1] * k + sizes_batches[k]
+            ]
+            x_batch.append(x)
+            y_batch.append(y)
+        else:
+            x = x_train[sizes_batches[k] * k : sizes_batches[k] * (k + 1)]
+            y = y_train[sizes_batches[k] * k : sizes_batches[k] * (k + 1)]
+            x_batch.append(x)
+            y_batch.append(y)
+
+    return x_batch, y_batch
+
+
+def calculate_batches(x_train, batch_size):
+    if len(x_train) % batch_size == 0:
+        number_of_batches = int(len(x_train) / batch_size)
+        sizes_batches = [batch_size for i in range(number_of_batches)]
+    else:
+        number_of_batches = int(len(x_train) / batch_size) + 1
+        size_last_batch = len(x_train) - batch_size * int(len(x_train) / batch_size)
+        sizes_batches = [batch_size for i in range(number_of_batches - 1)]
+        sizes_batches.append(size_last_batch)
+
+    return number_of_batches, sizes_batches
+
+
+def plot_metrics(nepochs, loss_history):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 5))
+
+    epochs = np.arange(0, nepochs, 1)
+    ax.plot(epochs, loss_history)
+    ax.set_title("Mnist")
+    ax.set_xlabel("Epochs")
+    plt.savefig("loss.png")
 
 
 def label_converter(label):
     v = np.zeros(10)
     v[label] = 1
     return v
-
-
-def initialize_data(train_size, resize, filt):
-    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-
-    if filt == "yes":
-        mask_train = (y_train == 0) | (y_train == 1)
-        mask_test = (y_test == 0) | (y_test == 1)
-        x_train = x_train[mask_train]
-        y_train = y_train[mask_train]
-        x_test = x_test[mask_test]
-        y_test = y_test[mask_test]
-
-    if train_size != 0:
-        x_train = x_train[0:train_size]
-        y_train = y_train[0:train_size]
-        x_test = x_test[train_size + 1 : (train_size + 1) * 2]
-        y_test = y_test[train_size + 1 : (train_size + 1) * 2]
-
-    # Resize images
-    width, length = 10, 10
-
-    x_train = tf.expand_dims(x_train, axis=-1)
-    x_test = tf.expand_dims(x_test, axis=-1)
-
-    x_train = tf.image.resize(x_train, [width, length])
-    x_test = tf.image.resize(x_test, [width, length])
-
-    # Normalize pixel values to be between 0 and pi
-    x_train = x_train / 255.0 * np.pi
-    x_test = x_test / 255.0 * np.pi
-
-    # plt.imshow(x_train[0], cmap='gray')
-    # plt.show()
-    # Fixing the
-    y_train = np.array([label_converter(label) for label in y_train])
-    y_test = np.array([label_converter(label) for label in y_test])
-
-    return x_train, y_train, x_test, y_test

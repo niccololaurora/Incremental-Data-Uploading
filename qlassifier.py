@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 from qibo import set_backend, gates, Circuit, hamiltonians
 from qibo.symbols import Z, I
 from qibo.optimizers import optimize, sgd, cmaes
-from help_functions import (
-    label_converter,
-)
+from help_functions import batch_data, calculate_batches, label_converter
 
 set_backend("tensorflow")
 
@@ -28,6 +26,8 @@ class MyClass:
         self.y_train = 0
         self.x_test = 0
         self.y_test = 0
+        self.batch_x = 0
+        self.batch_y = 0
         self.index = 0
 
     def create_hamiltonian(self, index):
@@ -90,6 +90,17 @@ class MyClass:
         self.x_test = x_test
         self.y_test = y_test
 
+        # Batching
+        number_of_batches, sizes_batches = calculate_batches(
+            self.x_train, self.batch_size
+        )
+        self.batch_x, self.batch_y = batch_data(
+            self.x_train,
+            self.y_train,
+            number_of_batches,
+            sizes_batches,
+        )
+
     def measure_block(self):
         c = Circuit(self.nqubits)
         for i in range(self.nqubits):
@@ -127,47 +138,62 @@ class MyClass:
 
     def training_loop(self):
         if (
-            (self.method == "Adam")
+            (self.method == "Adadelta")
             or (self.method == "Adagrad")
-            or (self.method == "Adadelta")
+            or (self.method == "Adam")
         ):
-            # perform optimization
-            options = {
-                "optimizer": self.method,
-                "learning_rate": self.learning_rate,
-                "nepochs": self.epochs,
-                "nmessage": 1,
-            }
-            best, params, extra = optimize(
-                self.loss_function,
-                self.vparams,
-                method=self.method,
-                options=options,
-            )
+            best, params, extra = 0, 0, 0
+            epoch_loss = []
+            for i in range(self.epochs):
+                with open("epochs.txt", "a") as file:
+                    print("=" * 60, file=file)
+                    print(f"Epoch {i+1}", file=file)
+
+                batch_loss = []
+                for k in range(len(self.batch_x)):
+                    best, params, extra = optimize(
+                        self.loss_function,
+                        self.vparams,
+                        args=(self.batch_x[k], self.batch_y[k]),
+                        method="sgd",
+                        options=self.options,
+                    )
+                    batch_loss.append(best)
+
+                    with open("epochs.txt", "a") as file:
+                        print("/" * 60, file=file)
+                        print(f"Batch {k+1}", file=file)
+                        print(f"Parametri:\n{params[0:20]}", file=file)
+                        print("/" * 60, file=file)
+
+                e_loss = sum(batch_loss) / len(batch_loss)
+                epoch_loss.append(e_loss)
+
+            with open("epochs.txt", "a") as file:
+                print("=" * 60, file=file)
+                print(f"Parametri finali:\n{params[0:20]}", file=file)
+                print("=" * 60, file=file)
 
         else:
             best, params, extra = optimize(
                 self.loss_function,
                 self.vparams,
-                method=self.method,
+                method="parallel_L-BFGS-B",
             )
 
-        return best, params, extra
+        return epoch_loss, params, extra
 
-    def loss_function(self, vparams=None):
+    def loss_function(self, vparams, batch_x, batch_y):
         if vparams is None:
             vparams = self.vparams
         self.set_parameters(vparams)
 
         predictions = []
-        for x in self.x_train:
+        for x in batch_x:
             output = self.single_image(x)
             predictions.append(output)
 
-        loss_value = tf.keras.losses.CategoricalCrossentropy()(
-            self.y_train, predictions
-        )
-
+        loss_value = tf.keras.losses.CategoricalCrossentropy()(batch_y, predictions)
         return loss_value
 
     def single_image(self, image):
