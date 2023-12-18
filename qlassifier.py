@@ -10,9 +10,11 @@ set_backend("tensorflow")
 
 
 class MyClass:
-    def __init__(self, train_size, resize, filt, epochs, batch_size, method):
+    def __init__(
+        self, train_size, resize, filt, epochs, batch_size, method, learning_rate
+    ):
         self.nqubits = 10
-        self.epochs = 3
+        self.epochs = epochs
         self.layers = 10
         self.nclasses = 2
         self.train_size = train_size
@@ -20,7 +22,7 @@ class MyClass:
         self.resize = resize
         self.filt = filt
         self.method = method
-        self.learning_rate = 0.001
+        self.learning_rate = learning_rate
         self.vparams = np.random.normal(loc=0, scale=1, size=(20, 20))
         self.x_train = 0
         self.y_train = 0
@@ -29,6 +31,12 @@ class MyClass:
         self.batch_x = 0
         self.batch_y = 0
         self.index = 0
+        self.options = {
+            "optimizer": self.method,
+            "learning_rate": self.learning_rate,
+            "nepochs": 1,
+            "nmessage": 5,
+        }
 
     def create_hamiltonian(self, index):
         ham = (

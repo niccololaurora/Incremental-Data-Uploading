@@ -10,10 +10,11 @@ def main():
     nome_file = "mnist_reuploading.txt"
     resize = 10
     filt = "no"
-    train_size = 0
-    epochs = 0
-    learning_rate = 0
-    method = 0
+    train_size = 9
+    epochs = 2
+    learning_rate = 0.1
+    method = "Adadelta"
+    batch_size = 3
 
     my_class = MyClass(
         train_size=train_size,
@@ -22,10 +23,12 @@ def main():
         epochs=epochs,
         batch_size=batch_size,
         method=method,
+        learning_rate=learning_rate,
     )
     my_class.initialize_data()
 
-    best, params, extra = my_class.training_loop()
+    epoch_loss, params, extra = my_class.training_loop()
+    plot_metrics(epoch_loss, epochs)
 
     print("Fine del training")
     with open(nome_file, "a") as file:
@@ -35,7 +38,7 @@ def main():
         print("/" * 60, file=file)
         print("/" * 60, file=file)
         print(f"Parametri finali circuito", file=file)
-        print(f"{vparams}", file=file)
+        print(f"{params}", file=file)
         print(f"Loss {best}", file=file)
         print("=" * 60, file=file)
 
