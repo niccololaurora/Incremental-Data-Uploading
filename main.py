@@ -1,6 +1,8 @@
 import numpy as np
+import pickle
 import matplotlib.pyplot as plt
 from qlassifier import MyClass
+from help_functions import plot_metrics
 
 
 def main():
@@ -28,7 +30,11 @@ def main():
     my_class.initialize_data()
 
     epoch_loss, params, extra = my_class.training_loop()
-    plot_metrics(epoch_loss, epochs)
+    plot_metrics(epochs, epoch_loss)
+
+    # Save final parameters
+    with open("saved_parameters.pkl", "wb") as f:
+        pickle.dump(self.vparams, f, pickle.HIGHEST_PROTOCOL)
 
     print("Fine del training")
     with open(nome_file, "a") as file:
