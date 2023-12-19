@@ -11,15 +11,27 @@ set_backend("tensorflow")
 
 class MyClass:
     def __init__(
-        self, train_size, resize, filt, epochs, batch_size, method, learning_rate
+        self,
+        train_size,
+        resize,
+        filt,
+        epochs,
+        batch_size,
+        method,
+        learning_rate,
+        nome_file,
     ):
+        self.nome_file
         self.nqubits = 10
+        self.epochs_early_stopping = epochs
         self.epochs = epochs
         self.layers = 10
         self.nclasses = 2
         self.train_size = train_size
         self.test_size = train_size
         self.validation_split = 0.2
+        self.tolerance = 1e-4
+        self.patience = 10
         self.batch_size = batch_size
         self.resize = resize
         self.filt = filt
@@ -186,7 +198,7 @@ class MyClass:
             best, params, extra = 0, 0, 0
             epoch_loss = []
             for i in range(self.epochs):
-                with open("epochs.txt", "a") as file:
+                with open(self.nome_file, "a") as file:
                     print("=" * 60, file=file)
                     print(f"Epoch {i+1}", file=file)
 
@@ -201,7 +213,7 @@ class MyClass:
                     )
                     batch_loss.append(best)
 
-                    with open("epochs.txt", "a") as file:
+                    with open(self.nome_file, "a") as file:
                         print("/" * 60, file=file)
                         print(f"Batch {k+1}", file=file)
                         print(f"Parametri:\n{params[0:20]}", file=file)
@@ -210,7 +222,11 @@ class MyClass:
                 e_loss = sum(batch_loss) / len(batch_loss)
                 epoch_loss.append(e_loss)
 
-            with open("epochs.txt", "a") as file:
+                # Validation
+                validation_loss = self.validation_loop()
+                epoch_validation_loss.append(validation_loss)
+
+            with open(self.nome_file, "a") as file:
                 print("=" * 60, file=file)
                 print(f"Parametri finali:\n{params[0:20]}", file=file)
                 print("=" * 60, file=file)
@@ -222,7 +238,32 @@ class MyClass:
                 method="parallel_L-BFGS-B",
             )
 
-        return epoch_loss, params, extra
+        return epoch_loss, epoch_validation_loss, params, self.epochs_early_stopping
+
+    def early_stopping(self, training_loss_history, validation_loss_history):
+        best_validation_loss = np.inf
+        epochs_without_improvement = 0
+
+        for epoch in range(len(training_loss_history)):
+            training_loss = training_loss_history[epoch]
+            validation_loss = validation_loss_history[epoch]
+
+            # Verifica se la loss di validazione ha migliorato
+            if validation_loss < best_validation_loss - self.tolerance:
+                best_validation_loss = validation_loss
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement += 1
+
+            if epochs_without_improvement >= self.patience:
+                with open(self.nome_file, "a") as file:
+                    print(">" * 60, file=file)
+                    print(f"Early stopping at epoch {epoch + 1}.")
+                    print(">" * 60, file=file)
+                self.epochs_early_stopping = epoch + 1
+                return True
+
+        return False
 
     def loss_function(self, vparams, batch_x, batch_y):
         if vparams is None:
