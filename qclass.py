@@ -13,15 +13,13 @@ class MyClass:
     def __init__(
         self,
         train_size,
-        resize,
-        filt,
         epochs,
         batch_size,
         method,
         learning_rate,
         nome_file,
     ):
-        self.nome_file
+        self.nome_file = nome_file
         self.nqubits = 10
         self.epochs_early_stopping = epochs
         self.epochs = epochs
@@ -171,7 +169,7 @@ class MyClass:
     def test_loop(self):
         predictions = []
         for x in self.x_test:
-            output = self.single_image(x)
+            output = self.circuit(x)
             predictions.append(output)
 
         accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
@@ -181,7 +179,7 @@ class MyClass:
     def validation_loop(self):
         predictions = []
         for x in self.x_validation:
-            output = self.single_image(x)
+            output = self.circuit(x)
             predictions.append(output)
 
         loss_value = tf.keras.losses.CategoricalCrossentropy()(
@@ -272,13 +270,13 @@ class MyClass:
 
         predictions = []
         for x in batch_x:
-            output = self.single_image(x)
+            output = self.circuit(x)
             predictions.append(output)
 
         loss_value = tf.keras.losses.CategoricalCrossentropy()(batch_y, predictions)
         return loss_value
 
-    def single_image(self, image):
+    def circuit(self, image):
         # resizing and using rows of params and image
         # row_image = tf.split(image, num_or_size_splits=10, axis=0)
         # row_vparams = tf.split(self.vparams, num_or_size_splits=20, axis=0)
@@ -297,9 +295,6 @@ class MyClass:
 
         # initial_state = 0
         for i in range(self.layers):
-            # row_image_flat = tf.reshape(rows[i], [-1])
-            # row_vparams_flat = tf.reshape(row_vparams[i], [-1])
-
             # encoding block
             ce.set_parameters(rows[i])
             result_ce = ce(initial_state)

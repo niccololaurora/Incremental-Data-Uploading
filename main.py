@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-from qlassifier import MyClass
+from qclass import MyClass
 from help_functions import plot_metrics
 
 
@@ -19,8 +19,6 @@ def main():
     # Create the class
     my_class = MyClass(
         train_size=train_size,
-        resize=resize,
-        filt=filt,
         epochs=epochs,
         batch_size=batch_size,
         method=method,
