@@ -18,6 +18,8 @@ class MyClass:
         self.layers = 10
         self.nclasses = 2
         self.train_size = train_size
+        self.test_size = train_size
+        self.validation_split = 0.2
         self.batch_size = batch_size
         self.resize = resize
         self.filt = filt
@@ -30,6 +32,8 @@ class MyClass:
         self.y_test = 0
         self.batch_x = 0
         self.batch_y = 0
+        self.x_validation = 0
+        self.y_validation = 0
         self.index = 0
         self.options = {
             "optimizer": self.method,
@@ -74,29 +78,37 @@ class MyClass:
         if self.train_size != 0:
             x_train = x_train[0 : self.train_size]
             y_train = y_train[0 : self.train_size]
-            x_test = x_test[self.train_size + 1 : (self.train_size + 1) * 2]
-            y_test = y_test[self.train_size + 1 : (self.train_size + 1) * 2]
+            validation_size = int(len(x_train) * self.validation_split)
+
+            x_validation = x_train[:validation_size]
+            y_validation = y_train[:validation_size]
+            x_train = x_train[validation_size:]
+            y_train = y_train[validation_size:]
+            x_test = x_test[0 : self.test_size]
+            y_test = y_test[0 : self.test_size]
 
         # Resize images
-        width, length = 10, 10
+        width, length = self.resize, self.resize
 
         x_train = tf.expand_dims(x_train, axis=-1)
         x_test = tf.expand_dims(x_test, axis=-1)
+        x_validation = tf.expand_dims(x_validation, axis=-1)
 
         x_train = tf.image.resize(x_train, [width, length])
         x_test = tf.image.resize(x_test, [width, length])
+        x_validation = tf.image.resize(x_validation, [width, length])
 
-        # Normalize pixel values to be between 0 and pi
+        # Normalize pixel values to be between 0 and 1
         x_train = x_train / 255.0 * np.pi
         x_test = x_test / 255.0 * np.pi
-
-        y_train = np.array([label_converter(label) for label in y_train])
-        y_test = np.array([label_converter(label) for label in y_test])
+        x_validation = x_validation / 255.0 * np.pi
 
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
+        self.x_validation = x_validation
+        self.y_validation = y_validation
 
         # Batching
         number_of_batches, sizes_batches = calculate_batches(
@@ -143,6 +155,27 @@ class MyClass:
             rows.append(row)
 
         return rows
+
+    def test_loop(self):
+        predictions = []
+        for x in self.x_test:
+            output = self.single_image(x)
+            predictions.append(output)
+
+        accuracy = tf.keras.metrics.BinaryAccuracy(threshold=0.5)
+        accuracy.update_state(self.y_test, predictions)
+        return accuracy
+
+    def validation_loop(self):
+        predictions = []
+        for x in self.x_validation:
+            output = self.single_image(x)
+            predictions.append(output)
+
+        loss_value = tf.keras.losses.CategoricalCrossentropy()(
+            self.y_validation, predictions
+        )
+        return loss_value
 
     def training_loop(self):
         if (

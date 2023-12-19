@@ -9,7 +9,6 @@ def main():
     # ==================================
     # Inizializzazione
     # ==================================
-    nome_file = "mnist_reuploading.txt"
     resize = 10
     filt = "no"
     train_size = 9
@@ -18,6 +17,7 @@ def main():
     method = "Adadelta"
     batch_size = 3
 
+    # Create the class
     my_class = MyClass(
         train_size=train_size,
         resize=resize,
@@ -27,26 +27,30 @@ def main():
         method=method,
         learning_rate=learning_rate,
     )
+
+    # Initialize data
     my_class.initialize_data()
 
-    epoch_loss, params, extra = my_class.training_loop()
+    # Training
+    epoch_train_loss, epoch_validation_loss, params, extra = my_class.training_loop()
+
+    # Plot training and validation loss
     plot_metrics(epochs, epoch_loss)
+
+    # Testing
+    accuracy = my_class.test_loop()
 
     # Save final parameters
     with open("saved_parameters.pkl", "wb") as f:
-        pickle.dump(self.vparams, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(params, f, pickle.HIGHEST_PROTOCOL)
 
-    print("Fine del training")
-    with open(nome_file, "a") as file:
+    # Print Accuracy
+    with open("epochs.txt", "a") as file:
         print("/" * 60, file=file)
         print("/" * 60, file=file)
-        print("Fine del training", file=file)
+        print(f"Accuracy {accuracy.result().numpy()}", file=file)
         print("/" * 60, file=file)
         print("/" * 60, file=file)
-        print(f"Parametri finali circuito", file=file)
-        print(f"{params}", file=file)
-        print(f"Loss {best}", file=file)
-        print("=" * 60, file=file)
 
 
 if __name__ == "__main__":
