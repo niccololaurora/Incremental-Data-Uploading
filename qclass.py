@@ -33,8 +33,8 @@ class MyClass:
         self.tolerance = 1e-4
         self.patience = 10
         self.batch_size = batch_size
-        self.resize = resize
-        self.filt = filt
+        self.resize = 10
+        self.filt = "no"
         self.method = method
         self.learning_rate = learning_rate
         self.vparams = np.random.normal(loc=0, scale=1, size=(20, 20))

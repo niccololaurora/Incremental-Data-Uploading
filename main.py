@@ -10,13 +10,11 @@ def main():
     # Inizializzazione
     # ==================================
     nome_file = "epochs.txt"
-    resize = 10
-    filt = "no"
-    train_size = 9
-    epochs = 2
-    learning_rate = 0.1
-    method = "Adadelta"
-    batch_size = 3
+    train_size = 0
+    epochs = 0
+    learning_rate = 0
+    method = 0
+    batch_size = 0
 
     # Create the class
     my_class = MyClass(

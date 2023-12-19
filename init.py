@@ -1,21 +1,27 @@
 def ask_params():
-    epochs = input("Inserisci il numero di epochs: ")
-    learning_rate = input("Inserisci il learning rate: ")
-    training_sample = input("Inserisci la dimensione del campione di addestramento: ")
+    epochs = input("Number of epochs: ")
+    learning_rate = input("Learning rate: ")
+    training_sample = input("Training size: ")
+    batch_size = input("Batch size: ")
 
     while True:
-        optimizer = input("Inserisci l'ottimizzatore: ")
+        optimizer = input("Optimizer: ")
         if optimizer.istitle():
             break
         else:
-            print("L'ottimizzatore deve iniziare con una lettera maiuscola.")
+            print("The name of the optimizer must start with a capital letter.")
 
-    return epochs, learning_rate, training_sample, optimizer
+    return epochs, learning_rate, training_sample, optimizer, batch_size
 
 
 def main():
-    epochs, learning_rate, training_sample, optimizer = ask_params()
-    optimizer_string = f"{optimizer}"
+    (
+        epochs,
+        learning_rate,
+        training_sample,
+        optimizer,
+        batch_size,
+    ) = ask_params()
 
     main_file = "main.py"
 
@@ -24,6 +30,9 @@ def main():
         main_file_content = file.read()
 
     # Sostituisci i valori appropriati nel contenuto del file
+    main_file_content = main_file_content.replace(
+        "method = 0", f"method = '{optimizer}'"
+    )
     main_file_content = main_file_content.replace("epochs = 0", f"epochs = {epochs}")
     main_file_content = main_file_content.replace(
         "learning_rate = 0", f"learning_rate = {learning_rate}"
@@ -32,14 +41,14 @@ def main():
         "training_sample = 0", f"training_sample = {training_sample}"
     )
     main_file_content = main_file_content.replace(
-        "method = 0", f"method = {optimizer_string}"
+        "batch_size = 0", f"batch_size = {batch_size}"
     )
 
     # Scrivi il nuovo contenuto nel file
     with open(main_file, "w") as file:
         file.write(main_file_content)
 
-    print("Le informazioni sono state scritte nel file 'main.py'.")
+    print("Informations written in 'main.py'.")
 
 
 if __name__ == "__main__":
