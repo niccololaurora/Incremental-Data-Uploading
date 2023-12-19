@@ -18,24 +18,26 @@ class MyClass:
         method,
         learning_rate,
         nome_file,
+        layers,
     ):
         self.nome_file = nome_file
+        self.epochs = epochs
+        self.layers = layers
+        self.train_size = train_size
+        self.batch_size = batch_size
+        self.method = method
+        self.learning_rate = learning_rate
         self.nqubits = 10
         self.epochs_early_stopping = epochs
-        self.epochs = epochs
-        self.layers = 10
+        self.splitting = 10
         self.nclasses = 2
-        self.train_size = train_size
         self.test_size = train_size
         self.validation_split = 0.2
         self.tolerance = 1e-4
         self.patience = 10
-        self.batch_size = batch_size
         self.resize = 10
         self.filt = "no"
-        self.method = method
-        self.learning_rate = learning_rate
-        self.vparams = np.random.normal(loc=0, scale=1, size=(20, 20))
+        self.vparams = np.random.normal(loc=0, scale=1, size=(20 * self.layers, 20))
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
@@ -135,6 +137,19 @@ class MyClass:
         c = Circuit(self.nqubits)
         for i in range(self.nqubits):
             c.add(gates.M(i))
+        return c
+
+    def entanglement_block(self):
+        """
+        Args: None
+        Return: circuit with CZs
+        """
+        c = Circuit(10)
+        for q in range(0, 9, 2):
+            c.add(gates.CNOT(q, q + 1))
+        for q in range(1, 8, 2):
+            c.add(gates.CNOT(q, q + 1))
+        c.add(gates.CNOT(9, 0))
         return c
 
     def encoding_block(self):
@@ -277,39 +292,40 @@ class MyClass:
         return loss_value
 
     def circuit(self, image):
-        # resizing and using rows of params and image
-        # row_image = tf.split(image, num_or_size_splits=10, axis=0)
-        # row_vparams = tf.split(self.vparams, num_or_size_splits=20, axis=0)
-
+        # Rows from image
         rows = self.rows_creator(image)
 
-        # Creation: encoding block, variational block, measurement block
+        # Creation: encoding block, variational block, measurement block, entanglement block
         ce = self.encoding_block()
         cv = self.variational_block()
         cm = self.measure_block()
+        cent = self.entanglement_block()
 
-        # building the circuit
+        # Initial state
         tensor_size = 2**self.nqubits
         tensor_values = [1] + [0] * (tensor_size - 1)
         initial_state = tf.constant(tensor_values, dtype=tf.float32)
 
-        # initial_state = 0
-        for i in range(self.layers):
-            # encoding block
-            ce.set_parameters(rows[i])
-            result_ce = ce(initial_state)
+        for j in range(self.layers):
+            for i in range(self.splitting):
+                # encoding block
+                ce.set_parameters(rows[i])
+                result_ce = ce(initial_state)
 
-            # variational block
-            cv.set_parameters(self.vparams[i])
-            result_cv = cv(result_ce.state())
-            state_cv = result_cv.state()
-            initial_state = state_cv
+                # variational block
+                cv.set_parameters(self.vparams[i + 20 * j])
+                result_cv = cv(result_ce.state())
+
+                # entanglement block
+                result_cent = cent(result_cv.state())
+
+                # State
+                initial_state = result_cent.state()
 
         # stato finale dopo i layer di encoding e variational
         final_state = initial_state
 
         # measuring block
-        shots = 2
         result = cm(final_state)
 
         # expectation values
@@ -322,5 +338,4 @@ class MyClass:
 
         # softmax
         soft_output = tf.nn.softmax(expectation_values)
-
         return soft_output

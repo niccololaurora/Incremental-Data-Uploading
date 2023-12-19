@@ -15,6 +15,7 @@ def main():
     learning_rate = 0
     method = 0
     batch_size = 0
+    layers = 0
 
     # Create the class
     my_class = MyClass(
@@ -24,6 +25,7 @@ def main():
         method=method,
         learning_rate=learning_rate,
         nome_file=nome_file,
+        layers=layers,
     )
 
     # Initialize data
