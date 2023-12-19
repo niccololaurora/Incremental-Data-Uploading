@@ -364,9 +364,12 @@ class MyClass:
                 # entanglement block
                 result_cent = cent(result_cv.state())
 
+                if (i == self.splitting - 1) and (j == self.layers - 1):
+                    break
                 # State
                 initial_state = result_cent.state()
 
+        # embed-var-ent embed-var-ent embed-var
         # stato finale dopo i layer di encoding e variational
         final_state = initial_state
 
