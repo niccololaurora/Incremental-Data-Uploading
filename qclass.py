@@ -37,7 +37,9 @@ class MyClass:
         self.patience = 10
         self.resize = 10
         self.filt = "no"
-        self.vparams = np.random.normal(loc=0, scale=1, size=(20 * self.layers, 20))
+        self.vparams = np.random.normal(
+            loc=0, scale=1, size=(20 * self.layers, 20)
+        ).astype(np.complex128)
         self.x_train = 0
         self.y_train = 0
         self.x_test = 0
@@ -160,6 +162,10 @@ class MyClass:
         x_test = x_test / 255.0 * np.pi
         x_validation = x_validation / 255.0 * np.pi
 
+        y_train = np.array([label_converter(label) for label in y_train])
+        y_test = np.array([label_converter(label) for label in y_test])
+        y_validation = np.array([label_converter(label) for label in y_validation])
+
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
@@ -185,16 +191,12 @@ class MyClass:
         return c
 
     def entanglement_block(self):
-        """
-        Args: None
-        Return: circuit with CZs
-        """
-        c = Circuit(10)
-        for q in range(0, 9, 2):
+        c = Circuit(self.nqubits)
+        for q in range(0, self.nqubits - 1, 2):
             c.add(gates.CNOT(q, q + 1))
-        for q in range(1, 8, 2):
+        for q in range(1, self.nqubits - 2, 2):
             c.add(gates.CNOT(q, q + 1))
-        c.add(gates.CNOT(9, 0))
+        c.add(gates.CNOT(self.nqubits - 1, 0))
         return c
 
     def encoding_block(self):
@@ -208,10 +210,6 @@ class MyClass:
         for i in range(self.nqubits):
             c.add(gates.RY(i, theta=0))
             c.add(gates.RZ(i, theta=0))
-        for i in range(self.nqubits - 1):
-            c.add(gates.CZ(i, i + 1))
-
-        c.add(gates.CZ(9, 0))
         """
         for i in range(int(nqubits/2)):
             c.add(gates.CZ(i, nqubits-(i+1)))

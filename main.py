@@ -10,16 +10,16 @@ def main():
     # Inizializzazione
     # ==================================
     nome_file = "epochs.txt"
-    train_size = 0
-    epochs = 0
-    learning_rate = 0
-    method = 0
-    batch_size = 0
-    layers = 0
+    training_sample = 10
+    epochs = 2
+    learning_rate = 0.1
+    method = "Adam"
+    batch_size = 2
+    layers = 2
 
     # Create the class
     my_class = MyClass(
-        train_size=train_size,
+        train_size=training_sample,
         epochs=epochs,
         batch_size=batch_size,
         method=method,

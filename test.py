@@ -1,12 +1,26 @@
 import tensorflow as tf
 import numpy as np
 from qibo import set_backend, gates, Circuit, hamiltonians
-from qibo.optimizers import optimize, sgd, cmaes
-from help_functions import batch_data, calculate_batches, label_converter
 
 
-layers = 2
-vparams = np.random.normal(loc=0, scale=1, size=(20 * layers, 20))
+def encoding_block():
+    c = Circuit(10)
+    for i in range(10):
+        c.add(gates.RX(i, theta=0))
+    return c
 
-print(vparams[0])
-print(vparams[1])
+
+def variational_block():
+    c = Circuit(10)
+    for i in range(10):
+        c.add(gates.RY(i, theta=0))
+        c.add(gates.RZ(i, theta=0))
+    for i in range(10 - 1):
+        c.add(gates.CZ(i, i + 1))
+
+    c.add(gates.CZ(9, 0))
+    return c
+
+
+c = variational_block()
+print(c.draw())

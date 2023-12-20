@@ -3,6 +3,7 @@ def ask_params():
     learning_rate = input("Learning rate: ")
     training_sample = input("Training size: ")
     batch_size = input("Batch size: ")
+    layers = input("Layers: ")
 
     while True:
         optimizer = input("Optimizer: ")
@@ -11,7 +12,7 @@ def ask_params():
         else:
             print("The name of the optimizer must start with a capital letter.")
 
-    return epochs, learning_rate, training_sample, optimizer, batch_size
+    return epochs, learning_rate, training_sample, optimizer, batch_size, layers
 
 
 def main():
@@ -21,6 +22,7 @@ def main():
         training_sample,
         optimizer,
         batch_size,
+        layers,
     ) = ask_params()
 
     main_file = "main.py"
@@ -43,6 +45,7 @@ def main():
     main_file_content = main_file_content.replace(
         "batch_size = 0", f"batch_size = {batch_size}"
     )
+    main_file_content = main_file_content.replace("layers = 0", f"layers = {layers}")
 
     # Scrivi il nuovo contenuto nel file
     with open(main_file, "w") as file:
